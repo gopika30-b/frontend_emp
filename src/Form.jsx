@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const Form = () => {
@@ -13,24 +13,73 @@ const Form = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState('');
-
+  const [existingData, setExistingData] = useState(null);
+  const [debouncedEmployeeID, setDebouncedEmployeeID] = useState(formData.employeeID);
+  const [debouncedEmail, setDebouncedEmail] = useState(formData.email);
   const departments = ['HR', 'Engineering', 'Marketing', 'Finance'];
 
   const validate = () => {
     const tempErrors = {};
-
     if (!formData.employeeID) tempErrors.employeeID = 'Employee ID is required.';
     if (!formData.name) tempErrors.name = 'Name is required.';
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) tempErrors.email = 'Valid email is required.';
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email) || !formData.email.endsWith('@company.com')) {
+      tempErrors.email = 'Valid email is required and must be from company.com.';
+    }
     if (!formData.phoneNumber || !/^\d{10}$/.test(formData.phoneNumber)) tempErrors.phoneNumber = 'Valid phone number is required.';
     if (!formData.department) tempErrors.department = 'Department is required.';
     if (!formData.dateOfJoining || new Date(formData.dateOfJoining) > new Date()) tempErrors.dateOfJoining = 'Invalid date.';
     if (!formData.role) tempErrors.role = 'Role is required.';
-
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
+
+  const checkExistingData = async (empID, email) => {
+    try {
+      const backendURL = `https://backend-emp-6kc6.onrender.com`;
+      const response = await axios.post(`${backendURL}/checkEmployee`, {
+        employeeID: empID,
+        email: email,
+      });
+      if (response.data.exists) {
+        setExistingData(response.data.data);
+      } else {
+        setExistingData(null);
+      }
+    } catch (err) {
+      window.alert('Error checking employee data.');
+    }
+  };
+
+  useEffect(() => {
+    if (debouncedEmployeeID || debouncedEmail) {
+      checkExistingData(debouncedEmployeeID, debouncedEmail);
+    }
+  }, [debouncedEmployeeID, debouncedEmail]);
+  const handleEmployeeIDChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, employeeID: value });
+    setDebouncedEmployeeID(value);
+  };
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, email: value });
+    setDebouncedEmail(value);
+  };
+
+  useEffect(() => {
+    const employeeTimeoutId = setTimeout(() => {
+      setDebouncedEmployeeID(formData.employeeID);
+    }, 1000);
+
+    const emailTimeoutId = setTimeout(() => {
+      setDebouncedEmail(formData.email);
+    }, 1000);
+
+    return () => {
+      clearTimeout(employeeTimeoutId);
+      clearTimeout(emailTimeoutId);
+    };
+  }, [formData.employeeID, formData.email]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +89,8 @@ const Form = () => {
     try {
       const backendURL = `https://backend-emp-6kc6.onrender.com`;
       const response = await axios.post(`${backendURL}/addEmployee`, formData);
-      setMessage(response.data.message);
+      window.alert(response.data.message);
+
       setFormData({
         employeeID: '',
         name: '',
@@ -51,8 +101,9 @@ const Form = () => {
         role: ''
       });
       setErrors({});
+      setExistingData(null);
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Something went wrong.');
+      window.alert(err.response?.data?.message || 'Something went wrong.');
     }
   };
 
@@ -67,7 +118,7 @@ const Form = () => {
       role: ''
     });
     setErrors({});
-    setMessage('');
+    setExistingData(null);
   };
 
   return (
@@ -77,10 +128,38 @@ const Form = () => {
         <input
           type="text"
           value={formData.employeeID}
-          onChange={(e) => setFormData({ ...formData, employeeID: e.target.value })}
+          onChange={handleEmployeeIDChange}
         />
+        {existingData && existingData.employeeID === formData.employeeID && (
+          <p className="exists-message">Employee ID already exists. Please check.</p>
+        )}
         <p>{errors.employeeID}</p>
       </div>
+
+      <div>
+        <label>Email</label>
+        <input
+          type="email"
+          value={formData.email}
+          onChange={handleEmailChange}
+        />
+        {existingData && existingData.email === formData.email && (
+          <p className="exists-message">Email ID already exists. Please check.</p>
+        )}
+        <p>{errors.email}</p>
+      </div>
+      {existingData && (
+        <div className="existing-data">
+          <h3>Existing Employee Data</h3>
+          <p>Employee ID: {existingData.employeeID}</p>
+          <p>Name: {existingData.name}</p>
+          <p>Email: {existingData.email}</p>
+          <p>Phone Number: {existingData.phoneNumber}</p>
+          <p>Department: {existingData.department}</p>
+          <p>Date of Joining: {existingData.dateOfJoining}</p>
+          <p>Role: {existingData.role}</p>
+        </div>
+      )}
       <div>
         <label>Name</label>
         <input
@@ -90,15 +169,7 @@ const Form = () => {
         />
         <p>{errors.name}</p>
       </div>
-      <div>
-        <label>Email</label>
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
-        <p>{errors.email}</p>
-      </div>
+
       <div>
         <label>Phone Number</label>
         <input
@@ -108,6 +179,7 @@ const Form = () => {
         />
         <p>{errors.phoneNumber}</p>
       </div>
+
       <div>
         <label>Department</label>
         <select
@@ -123,6 +195,7 @@ const Form = () => {
         </select>
         <p>{errors.department}</p>
       </div>
+
       <div>
         <label>Date of Joining</label>
         <input
@@ -132,6 +205,7 @@ const Form = () => {
         />
         <p>{errors.dateOfJoining}</p>
       </div>
+
       <div>
         <label>Role</label>
         <input
@@ -141,8 +215,11 @@ const Form = () => {
         />
         <p>{errors.role}</p>
       </div>
-      <p className='message'>{message}</p>
-      <button type="submit">Submit</button>
+
+      <p className="message">{message}</p>
+      <button type="submit">
+        Submit
+      </button>
       <button type="button" onClick={handleReset}>
         Reset
       </button>
