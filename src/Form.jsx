@@ -1,6 +1,3 @@
-
-      
-
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -41,7 +38,7 @@ const Form = () => {
     if (!validate()) return;
 
     try {
-      const backendURL = `http://localhost:5000`;
+      const backendURL = `https://backend-emp-6kc6.onrender.com`;
       const response = await axios.post(`${backendURL}/addEmployee`, formData);
       setMessage(response.data.message);
       setFormData({
