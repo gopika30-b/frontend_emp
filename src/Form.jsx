@@ -14,7 +14,7 @@ const Form = () => {
 
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
-  const [existingData, setExistingData] = useState(null); // State for existing data
+  const [existingData, setExistingData] = useState(null);
   const [debouncedEmployeeID, setDebouncedEmployeeID] = useState(formData.employeeID);
   const [debouncedEmail, setDebouncedEmail] = useState(formData.email);
 
@@ -51,7 +51,7 @@ const Form = () => {
       if (response.data.exists) {
         setExistingData(response.data.data);
       } else {
-        setExistingData(null); // Clear existing data if not found
+        setExistingData(null);
       }
     } catch (err) {
       window.alert('Error checking employee data.');
@@ -79,11 +79,10 @@ const Form = () => {
   useEffect(() => {
     const employeeTimeoutId = setTimeout(() => {
       setDebouncedEmployeeID(formData.employeeID);
-    }, 1000); // 1 second debounce delay
-
+    }, 1000);
     const emailTimeoutId = setTimeout(() => {
       setDebouncedEmail(formData.email);
-    }, 1000); // 1 second debounce delay
+    }, 1000);
 
     return () => {
       clearTimeout(employeeTimeoutId);
