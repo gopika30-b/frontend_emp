@@ -13,22 +13,29 @@ const Form = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [existingData, setExistingData] = useState(null);
+  const [message, setMessage] = useState('');
+  const [existingData, setExistingData] = useState(null); // State for existing data
   const [debouncedEmployeeID, setDebouncedEmployeeID] = useState(formData.employeeID);
   const [debouncedEmail, setDebouncedEmail] = useState(formData.email);
+
   const departments = ['HR', 'Engineering', 'Marketing', 'Finance'];
 
   const validate = () => {
     const tempErrors = {};
+
     if (!formData.employeeID) tempErrors.employeeID = 'Employee ID is required.';
     if (!formData.name) tempErrors.name = 'Name is required.';
+
+    // Email validation - check if it ends with @company.com
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email) || !formData.email.endsWith('@company.com')) {
       tempErrors.email = 'Valid email is required and must be from company.com.';
     }
+
     if (!formData.phoneNumber || !/^\d{10}$/.test(formData.phoneNumber)) tempErrors.phoneNumber = 'Valid phone number is required.';
     if (!formData.department) tempErrors.department = 'Department is required.';
     if (!formData.dateOfJoining || new Date(formData.dateOfJoining) > new Date()) tempErrors.dateOfJoining = 'Invalid date.';
     if (!formData.role) tempErrors.role = 'Role is required.';
+
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
@@ -40,10 +47,11 @@ const Form = () => {
         employeeID: empID,
         email: email,
       });
+
       if (response.data.exists) {
         setExistingData(response.data.data);
       } else {
-        setExistingData(null);
+        setExistingData(null); // Clear existing data if not found
       }
     } catch (err) {
       window.alert('Error checking employee data.');
@@ -55,11 +63,13 @@ const Form = () => {
       checkExistingData(debouncedEmployeeID, debouncedEmail);
     }
   }, [debouncedEmployeeID, debouncedEmail]);
+
   const handleEmployeeIDChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, employeeID: value });
     setDebouncedEmployeeID(value);
   };
+
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, email: value });
@@ -69,11 +79,11 @@ const Form = () => {
   useEffect(() => {
     const employeeTimeoutId = setTimeout(() => {
       setDebouncedEmployeeID(formData.employeeID);
-    }, 1000);
+    }, 1000); // 1 second debounce delay
 
     const emailTimeoutId = setTimeout(() => {
       setDebouncedEmail(formData.email);
-    }, 1000);
+    }, 1000); // 1 second debounce delay
 
     return () => {
       clearTimeout(employeeTimeoutId);
@@ -118,11 +128,13 @@ const Form = () => {
       role: ''
     });
     setErrors({});
+    setMessage('');
     setExistingData(null);
   };
 
   return (
     <form onSubmit={handleSubmit}>
+
       <div>
         <label>Employee ID</label>
         <input
